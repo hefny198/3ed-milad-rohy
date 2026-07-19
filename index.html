@@ -874,7 +874,7 @@
 
       <div class="now-playing">
         <iframe id="ytPlayer" width="90" height="60"
-          src="https://www.youtube.com/embed/MlThQTo6D8A?enablejsapi=1&rel=0"
+          src="https://www.youtube.com/embed/MlThQTo6D8A?enablejsapi=1&rel=0&playsinline=1"
           title="Until I Found You" allow="autoplay; encrypted-media"></iframe>
         <div class="now-playing-text">"Until I Found You"<br><b>Stephen Sanchez</b></div>
       </div>
@@ -971,10 +971,21 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 window.ytPlayerInstance = null;
+window.ytPlayerReady = false;
+window.ytPendingCommand = null;
 window.onYouTubeIframeAPIReady = function(){
   window.ytPlayerInstance = new YT.Player('ytPlayer', {
     events: {
-      'onReady': function(){ /* player is ready to receive commands */ },
+      'onReady': function(){
+        window.ytPlayerReady = true;
+        if(window.ytPendingCommand){
+          const fn = window.ytPendingCommand;
+          window.ytPendingCommand = null;
+          if(typeof window.ytPlayerInstance[fn] === 'function'){
+            window.ytPlayerInstance[fn]();
+          }
+        }
+      },
       'onError': function(e){ console.log('YouTube player error', e); }
     }
   });
@@ -1535,8 +1546,10 @@ function setupTurntable(){
   }
 
   function ytCommand(func){
-    if(window.ytPlayerInstance && typeof window.ytPlayerInstance[func] === 'function'){
+    if(window.ytPlayerReady && window.ytPlayerInstance && typeof window.ytPlayerInstance[func] === 'function'){
       window.ytPlayerInstance[func]();
+    } else {
+      window.ytPendingCommand = func;
     }
   }
 
