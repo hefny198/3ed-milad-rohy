@@ -972,19 +972,18 @@
 <script>
 window.ytPlayerInstance = null;
 window.ytPlayerReady = false;
-window.ytPendingCommand = null;
+window.ytPendingQueue = [];
 window.onYouTubeIframeAPIReady = function(){
   window.ytPlayerInstance = new YT.Player('ytPlayer', {
     events: {
       'onReady': function(){
         window.ytPlayerReady = true;
-        if(window.ytPendingCommand){
-          const fn = window.ytPendingCommand;
-          window.ytPendingCommand = null;
+        window.ytPendingQueue.forEach(function(fn){
           if(typeof window.ytPlayerInstance[fn] === 'function'){
             window.ytPlayerInstance[fn]();
           }
-        }
+        });
+        window.ytPendingQueue = [];
       },
       'onError': function(e){ console.log('YouTube player error', e); }
     }
@@ -1549,14 +1548,16 @@ function setupTurntable(){
     if(window.ytPlayerReady && window.ytPlayerInstance && typeof window.ytPlayerInstance[func] === 'function'){
       window.ytPlayerInstance[func]();
     } else {
-      window.ytPendingCommand = func;
+      window.ytPendingQueue.push(func);
     }
   }
 
   function playRecord(){
     isPlaying = true;
     disc.classList.add('spinning');
+    ytCommand('mute');
     ytCommand('playVideo');
+    setTimeout(function(){ ytCommand('unMute'); }, 300);
   }
   function pauseRecord(){
     isPlaying = false;
